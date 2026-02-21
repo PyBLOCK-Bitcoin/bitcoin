@@ -100,6 +100,7 @@ void OptionsDialog::FixTabOrder(QWidget * const o)
 struct CreateOptionUIOpts {
     QBoxLayout *horizontal_layout{nullptr};
     int stretch{1};
+    int insert_at{-1};
     int indent{0};
 };
 
@@ -153,7 +154,7 @@ void OptionsDialog::CreateOptionUI(QBoxLayout * const layout, const QString& tex
 
     if (opts.stretch) horizontalLayout->addStretch(opts.stretch);
 
-    layout->addLayout(horizontalLayout);
+    layout->insertLayout(opts.insert_at, horizontalLayout);
 
     for (auto& o : objs) {
         o->setProperty("L", QVariant::fromValue((QLayout*)horizontalLayout));
@@ -266,10 +267,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     connect(ui->networkPort, SIGNAL(textChanged(const QString&)), this, SLOT(checkLineEdit()));
 
     /* Network elements init */
-#ifndef USE_UPNP
-    ui->mapPortUpnp->setEnabled(false);
-#endif
-
     ui->proxyIp->setEnabled(false);
     ui->proxyPort->setEnabled(false);
     ui->proxyPort->setValidator(new QIntValidator(1, 65535, this));
@@ -298,8 +295,29 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     ui->verticalLayout_Wallet->insertWidget(0, walletrbf);
     FixTabOrder(walletrbf);
 
+    QStyleOptionButton styleoptbtn;
+    const auto checkbox_indent = ui->allowIncoming->style()->subElementRect(QStyle::SE_CheckBoxIndicator, &styleoptbtn, ui->allowIncoming).width();
+
     /* Network tab */
     QLayoutItem *spacer = ui->verticalLayout_Network->takeAt(ui->verticalLayout_Network->count() - 1);
+
+    prevwidget = ui->allowIncoming;
+    ui->verticalLayout_Network->removeWidget(ui->mapPortNatpmp);
+    int insert_at = ui->verticalLayout_Network->indexOf(ui->connectSocks);
+    // NOTE: Re-inserted in bottom-to-top order
+    CreateOptionUI(ui->verticalLayout_Network, QStringLiteral("%1"), {ui->mapPortNatpmp}, { .insert_at=insert_at, .indent=checkbox_indent, });
+    upnp = new QCheckBox(ui->tabNetwork);
+    upnp->setText(tr("Automatically configure router(s) that support &UPnP"));
+    upnp->setToolTip(tr("Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled."));
+#ifndef USE_UPNP
+    upnp->setEnabled(false);
+#endif
+    CreateOptionUI(ui->verticalLayout_Network, QStringLiteral("%1"), {upnp}, { .insert_at=insert_at, .indent=checkbox_indent, });
+    connect(ui->allowIncoming, &QPushButton::toggled, upnp, &QWidget::setEnabled);
+    connect(ui->allowIncoming, &QPushButton::toggled, ui->mapPortNatpmp, &QWidget::setEnabled);
+    upnp->setEnabled(ui->allowIncoming->isChecked());
+    ui->mapPortNatpmp->setEnabled(ui->allowIncoming->isChecked());
+
     prevwidget = dynamic_cast<QWidgetItem*>(ui->verticalLayout_Network->itemAt(ui->verticalLayout_Network->count() - 1))->widget();
 
     blockreconstructionextratxn = new QSpinBox(ui->tabNetwork);
@@ -378,7 +396,7 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
 
     rejectunknownwitness = new QCheckBox(groupBox_Spamfiltering);
     rejectunknownwitness->setText(tr("Reject unknown witness script versions"));
-    rejectunknownwitness->setToolTip(tr("Some attempts to spam Bitcoin intentionally use undefined witness script formats reserved for future use. By enabling this option, your node will reject transactions using these undefined/future versions. Note that if you send to many addressses in a single transaction, the entire transaction may be rejected if any single one of them attempts to use an undefined format."));
+    rejectunknownwitness->setToolTip(tr("Some attempts to spam Bitcoin intentionally use undefined witness script formats reserved for future use. By enabling this option, your node will reject transactions using these undefined/future versions. Note that if you send to many addresses in a single transaction, the entire transaction may be rejected if any single one of them attempts to use an undefined format."));
     verticalLayout_Spamfiltering->addWidget(rejectunknownwitness);
     FixTabOrder(rejectunknownwitness);
 
@@ -551,9 +569,6 @@ OptionsDialog::OptionsDialog(QWidget* parent, bool enableWallet)
     dustdynamic_multiplier->setMaximum(65);
     dustdynamic_multiplier->setValue(DEFAULT_DUST_RELAY_MULTIPLIER / 1000.0);
     CreateOptionUI(verticalLayout_Spamfiltering, tr("%1 Automatically adjust the dust limit upward to %2 times:"), {dustdynamic_enable, dustdynamic_multiplier});
-
-    QStyleOptionButton styleoptbtn;
-    const auto checkbox_indent = dustdynamic_enable->style()->subElementRect(QStyle::SE_CheckBoxIndicator, &styleoptbtn, dustdynamic_enable).width();
 
     dustdynamic_target = new QRadioButton(groupBox_Spamfiltering);
     dustdynamic_target_blocks = new QSpinBox(groupBox_Spamfiltering);
@@ -851,7 +866,7 @@ void OptionsDialog::setMapper()
 
     /* Network */
     mapper->addMapping(ui->networkPort, OptionsModel::NetworkPort);
-    mapper->addMapping(ui->mapPortUpnp, OptionsModel::MapPortUPnP);
+    mapper->addMapping(upnp, OptionsModel::MapPortUPnP);
     mapper->addMapping(ui->mapPortNatpmp, OptionsModel::MapPortNatpmp);
     mapper->addMapping(ui->allowIncoming, OptionsModel::Listen);
     mapper->addMapping(ui->enableServer, OptionsModel::Server);

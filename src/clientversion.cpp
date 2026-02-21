@@ -74,6 +74,7 @@ std::string FormatSubVersion(const std::string& name, int nClientVersion, const 
             return "PyBLOCK:" + CLIENT_BUILD.substr(pos + 8) + "/";
         }();
         ua += ua_knots;
+        ua += "UASF-BIP110:0.1/";
     }
     return ua;
 }

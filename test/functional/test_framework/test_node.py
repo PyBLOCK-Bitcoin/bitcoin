@@ -28,6 +28,7 @@ from .authproxy import (
     serialization_fallback,
 )
 from .descriptors import descsum_create
+from .messages import MAX_OP_RETURN_RELAY
 from .messages import NODE_P2P_V2
 from .p2p import P2P_SERVICES, P2P_SUBVERSION
 from .util import (
@@ -144,7 +145,7 @@ class TestNode():
             self.args.append("-logsourcelocations")
         if self.version_is_at_least(239000):
             self.args.append("-loglevel=trace")
-        if self.version_is_at_least(299900):
+        if self.version_is_at_least(290100):
             self.args.append("-nologratelimit")
 
         # Default behavior from global -v2transport flag is added to args to persist it over restarts.
@@ -261,6 +262,11 @@ class TestNode():
         subp_env = dict(os.environ, LIBC_FATAL_STDERR_="1")
         if env is not None:
             subp_env.update(env)
+
+        for arg in extra_args:
+            if arg.startswith('-datacarriersize=') and int(arg[17:]) > MAX_OP_RETURN_RELAY:
+                extra_args = list(extra_args)
+                extra_args.append('-acceptnonstdtxn=1')
 
         self.process = subprocess.Popen(self.args + extra_args, env=subp_env, stdout=stdout, stderr=stderr, cwd=cwd, **kwargs)
 
