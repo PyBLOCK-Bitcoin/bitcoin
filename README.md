@@ -1,7 +1,6 @@
 <img src="https://avatars.githubusercontent.com/u/234659742?v=4" width="20%" /> PyBLOCK Bitcoin Node/Client/Wallet. <img src="https://github.com/bitcoinknots/bitcoin/blob/29.x-knots/src/qt/res/icons/bitcoin.png?raw=true?v=4" width="20%" /> 
 
 
-
 -----
 
 sudo apt-get update
