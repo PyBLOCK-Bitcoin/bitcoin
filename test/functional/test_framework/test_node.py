@@ -28,6 +28,7 @@ from .authproxy import (
     serialization_fallback,
 )
 from .descriptors import descsum_create
+from .messages import MAX_OP_RETURN_RELAY
 from .messages import NODE_P2P_V2
 from .p2p import P2P_SERVICES, P2P_SUBVERSION
 from .util import (
@@ -91,7 +92,8 @@ class TestNode():
         self.stderr_dir = self.datadir_path / "stderr"
         self.chain = chain
         self.rpchost = rpchost
-        self.rpc_timeout = timewait
+        self.rpc_timeout = timewait  # Already multiplied by timeout_factor
+        self.timeout_factor = timeout_factor
         self.binary = bitcoind
         self.coverage_dir = coverage_dir
         self.cwd = cwd
@@ -144,7 +146,7 @@ class TestNode():
             self.args.append("-logsourcelocations")
         if self.version_is_at_least(239000):
             self.args.append("-loglevel=trace")
-        if self.version_is_at_least(299900):
+        if self.version_is_at_least(290100):
             self.args.append("-nologratelimit")
 
         # Default behavior from global -v2transport flag is added to args to persist it over restarts.
@@ -158,7 +160,11 @@ class TestNode():
                 self.args.append("-v2transport=0")
         # if v2transport is requested via global flag but not supported for node version, ignore it
 
-        self.cli = TestNodeCLI(bitcoin_cli, self.datadir_path)
+        self.cli = TestNodeCLI(
+            bitcoin_cli,
+            self.datadir_path,
+            self.rpc_timeout // 2,  # timeout identical to the one used in self._rpc
+        )
         self.use_cli = use_cli
         self.start_perf = start_perf
 
@@ -172,7 +178,6 @@ class TestNode():
         self.perf_subprocesses = {}
 
         self.p2ps = []
-        self.timeout_factor = timeout_factor
 
         self.mocktime = None
 
@@ -261,6 +266,11 @@ class TestNode():
         subp_env = dict(os.environ, LIBC_FATAL_STDERR_="1")
         if env is not None:
             subp_env.update(env)
+
+        for arg in extra_args:
+            if arg.startswith('-datacarriersize=') and int(arg[17:]) > MAX_OP_RETURN_RELAY:
+                extra_args = list(extra_args)
+                extra_args.append('-acceptnonstdtxn=1')
 
         self.process = subprocess.Popen(self.args + extra_args, env=subp_env, stdout=stdout, stderr=stderr, cwd=cwd, **kwargs)
 
@@ -900,16 +910,17 @@ def arg_to_cli(arg):
 
 class TestNodeCLI():
     """Interface to bitcoin-cli for an individual node"""
-    def __init__(self, binary, datadir):
+    def __init__(self, binary, datadir, rpc_timeout):
         self.options = []
         self.binary = binary
         self.datadir = datadir
+        self.rpc_timeout = rpc_timeout
         self.input = None
         self.log = logging.getLogger('TestFramework.bitcoincli')
 
     def __call__(self, *options, input=None):
         # TestNodeCLI is callable with bitcoin-cli command-line options
-        cli = TestNodeCLI(self.binary, self.datadir)
+        cli = TestNodeCLI(self.binary, self.datadir, self.rpc_timeout)
         cli.options = [str(o) for o in options]
         cli.input = input
         return cli
@@ -930,7 +941,11 @@ class TestNodeCLI():
         """Run bitcoin-cli command. Deserializes returned string as python object."""
         pos_args = [arg_to_cli(arg) for arg in args]
         named_args = [str(key) + "=" + arg_to_cli(value) for (key, value) in kwargs.items()]
-        p_args = [self.binary, f"-datadir={self.datadir}"] + self.options
+        p_args = [
+            self.binary,
+            f"-datadir={self.datadir}",
+            f"-rpcclienttimeout={int(self.rpc_timeout)}",
+        ] + self.options
         if named_args:
             p_args += ["-named"]
         if clicommand is not None:

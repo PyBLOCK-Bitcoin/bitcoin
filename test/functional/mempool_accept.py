@@ -69,6 +69,7 @@ class MempoolAcceptanceTest(BitcoinTestFramework):
         for r in result_test:
             # Skip these checks for now
             r.pop('wtxid')
+            r.pop('usage')
             if "fees" in r:
                 r["fees"].pop("effective-feerate")
                 r["fees"].pop("effective-includes")
@@ -454,7 +455,7 @@ class MempoolAcceptanceTest(BitcoinTestFramework):
         nested_anchor_spend.rehash()
 
         self.check_mempool_result(
-            result_expected=[{'txid': nested_anchor_spend.rehash(), 'allowed': False, 'reject-reason': 'non-mandatory-script-verify-flag (Witness version reserved for soft-fork upgrades)'}],
+            result_expected=[{'txid': nested_anchor_spend.rehash(), 'allowed': False, 'reject-reason': 'mempool-script-verify-flag-failed (Witness version reserved for soft-fork upgrades)'}],
             rawtxs=[nested_anchor_spend.serialize().hex()],
             maxfeerate=0,
         )

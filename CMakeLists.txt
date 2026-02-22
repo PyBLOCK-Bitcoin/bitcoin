@@ -26,6 +26,7 @@ get_directory_property(precious_variables CACHE_VARIABLES)
 #=============================
 # Project / Package metadata
 #=============================
+<<<<<<< HEAD
 set(CLIENT_NAME "Bitcoin PyBLOCK")
 set(CLIENT_VERSION_MAJOR 77)
 set(CLIENT_VERSION_MINOR 0)
@@ -35,6 +36,17 @@ set(CLIENT_VERSION_IS_RELEASE "true")
 set(COPYRIGHT_YEAR "2140")
 
 set(CLIENT_VERSION_SUFFIX ".pyblock")
+=======
+set(CLIENT_NAME "Bitcoin Knots")
+set(CLIENT_VERSION_MAJOR 29)
+set(CLIENT_VERSION_MINOR 3)
+set(CLIENT_VERSION_BUILD 0)
+set(CLIENT_VERSION_RC 0)
+set(CLIENT_VERSION_IS_RELEASE "true")
+set(COPYRIGHT_YEAR "2026")
+
+set(CLIENT_VERSION_SUFFIX ".knots20260210")
+>>>>>>> other-repo/29.3.knots20260210+UASF-BIP110
 
 # During the enabling of the CXX and CXXOBJ languages, we modify
 # CMake's compiler/linker invocation strings by appending the content
@@ -178,7 +190,7 @@ if(WITH_BDB)
                     "BDB (legacy) wallets opened by this build will not be portable!"
     )
     if(WARN_INCOMPATIBLE_BDB)
-      message(WARNING "If this is intended, pass \"-DWARN_INCOMPATIBLE_BDB=OFF\".\n"
+      message(FATAL_ERROR "If this is intended, pass \"-DWARN_INCOMPATIBLE_BDB=OFF\".\n"
                       "Passing \"-DWITH_BDB=OFF\" will suppress this warning."
       )
     endif()
