@@ -48,6 +48,7 @@
 #include <memory>
 #include <stdint.h>
 
+using interfaces::BlockRef;
 using interfaces::BlockTemplate;
 using interfaces::Mining;
 using node::BlockAssembler;
@@ -861,7 +862,10 @@ static RPCHelpMan getblocktemplate()
         {
             MillisecondsDouble checktxtime{std::chrono::minutes(1)};
             while (tip == hashWatchedChain && IsRPCRunning()) {
-                tip = miner.waitTipChanged(hashWatchedChain, checktxtime).hash;
+                std::optional<BlockRef> maybe_tip{miner.waitTipChanged(hashWatchedChain, checktxtime)};
+                // Node is shutting down
+                if (!maybe_tip) break;
+                tip = maybe_tip->hash;
                 // Timeout: Check transactions for update
                 // without holding the mempool lock to avoid deadlocks
                 if (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLastLP)
@@ -1016,12 +1020,14 @@ static UniValue TemplateToJSON(const Consensus::Params& consensusParams, const C
     }
 
     UniValue vbavailable(UniValue::VOBJ);
+    uint32_t vbrequired = 0;
     for (int j = 0; j < (int)Consensus::MAX_VERSION_BITS_DEPLOYMENTS; ++j) {
         Consensus::DeploymentPos pos = Consensus::DeploymentPos(j);
         ThresholdState state = chainman.m_versionbitscache.State(pindexPrev, consensusParams, pos);
         switch (state) {
             case ThresholdState::DEFINED:
             case ThresholdState::FAILED:
+            case ThresholdState::EXPIRED:
                 // Not exposed to GBT at all
                 break;
             case ThresholdState::LOCKED_IN:
@@ -1032,6 +1038,9 @@ static UniValue TemplateToJSON(const Consensus::Params& consensusParams, const C
             {
                 const struct VBDeploymentInfo& vbinfo = VersionBitsDeploymentInfo[pos];
                 vbavailable.pushKV(gbt_vb_name(pos), consensusParams.vDeployments[pos].bit);
+                if (DeploymentMustSignalAfter(pindexPrev, consensusParams, pos, state)) {
+                    vbrequired |= chainman.m_versionbitscache.Mask(consensusParams, pos);
+                }
                 if (setClientRules.find(vbinfo.name) == setClientRules.end()) {
                     if (!vbinfo.gbt_force) {
                         // If the client doesn't support this, don't indicate it in the [default] version
@@ -1058,7 +1067,7 @@ static UniValue TemplateToJSON(const Consensus::Params& consensusParams, const C
     result.pushKV("version", block_header.nVersion);
     result.pushKV("rules", std::move(aRules));
     result.pushKV("vbavailable", std::move(vbavailable));
-    result.pushKV("vbrequired", int(0));
+    result.pushKV("vbrequired", vbrequired);
 
     result.pushKV("previousblockhash", block.hashPrevBlock.GetHex());
     result.pushKV("transactions", std::move(transactions));

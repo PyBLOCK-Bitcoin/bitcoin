@@ -55,12 +55,12 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     pixmap.setDevicePixelRatio(devicePixelRatio);
 
     QPainter pixPaint(&pixmap);
-    pixPaint.setPen(QColor(0x17, 0x17, 0x17));
+    pixPaint.setPen(QColor(0xF7, 0x93, 0x1A));
 
     // draw a slightly radial gradient
     QRadialGradient gradient(QPoint(0,0), splashSize.width()/devicePixelRatio);
     gradient.setColorAt(0, networkStyle->AdjustColour(QColor(0xff, 0xff, 0xff)));
-    gradient.setColorAt(1, networkStyle->AdjustColour(QColor(0xff, 0xff, 0xff)));
+    gradient.setColorAt(1, networkStyle->AdjustColour(QColor(0x0f, 0x0f, 0x0f)));
     QRect rGradient(QPoint(0,0), splashSize);
     pixPaint.fillRect(rGradient, gradient);
 
@@ -200,7 +200,7 @@ static void InitMessage(SplashScreen *splash, const std::string &message)
         Qt::QueuedConnection,
         Q_ARG(QString, QString::fromStdString(message)),
         Q_ARG(int, Qt::AlignBottom|Qt::AlignHCenter),
-        Q_ARG(QColor, QColor(55,55,55)));
+        Q_ARG(QColor, QColor(220,220,220)));
     assert(invoked);
 }
 

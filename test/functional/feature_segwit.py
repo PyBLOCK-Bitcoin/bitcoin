@@ -194,8 +194,8 @@ class SegWitTest(BitcoinTestFramework):
         assert_equal(self.nodes[2].getbalance(), 20 * Decimal("49.999"))
 
         self.log.info("Verify unsigned p2sh witness txs without a redeem script are invalid")
-        self.fail_accept(self.nodes[2], "mandatory-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_2][P2WPKH][1], sign=False)
-        self.fail_accept(self.nodes[2], "mandatory-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_2][P2WSH][1], sign=False)
+        self.fail_accept(self.nodes[2], "mempool-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_2][P2WPKH][1], sign=False)
+        self.fail_accept(self.nodes[2], "mempool-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_2][P2WSH][1], sign=False)
 
         self.generate(self.nodes[0], 1)  # block 164
 
@@ -214,13 +214,13 @@ class SegWitTest(BitcoinTestFramework):
 
         self.log.info("Verify default node can't accept txs with missing witness")
         # unsigned, no scriptsig
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Witness program hash mismatch)", wit_ids[NODE_0][P2WPKH][0], sign=False)
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Witness program was passed an empty witness)", wit_ids[NODE_0][P2WSH][0], sign=False)
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_0][P2WPKH][0], sign=False)
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_0][P2WSH][0], sign=False)
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Witness program hash mismatch)", wit_ids[NODE_0][P2WPKH][0], sign=False)
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Witness program was passed an empty witness)", wit_ids[NODE_0][P2WSH][0], sign=False)
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_0][P2WPKH][0], sign=False)
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Operation not valid with the current stack size)", p2sh_ids[NODE_0][P2WSH][0], sign=False)
         # unsigned with redeem script
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Witness program hash mismatch)", p2sh_ids[NODE_0][P2WPKH][0], sign=False, redeem_script=witness_script(False, self.pubkey[0]))
-        self.fail_accept(self.nodes[0], "mandatory-script-verify-flag-failed (Witness program was passed an empty witness)", p2sh_ids[NODE_0][P2WSH][0], sign=False, redeem_script=witness_script(True, self.pubkey[0]))
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Witness program hash mismatch)", p2sh_ids[NODE_0][P2WPKH][0], sign=False, redeem_script=witness_script(False, self.pubkey[0]))
+        self.fail_accept(self.nodes[0], "mempool-script-verify-flag-failed (Witness program was passed an empty witness)", p2sh_ids[NODE_0][P2WSH][0], sign=False, redeem_script=witness_script(True, self.pubkey[0]))
 
         # Coinbase contains the witness commitment nonce, check that RPC shows us
         coinbase_txid = self.nodes[2].getblock(blockhash)['tx'][0]
@@ -231,10 +231,10 @@ class SegWitTest(BitcoinTestFramework):
         assert_equal(witnesses[0], '00' * 32)
 
         self.log.info("Verify witness txs without witness data are invalid after the fork")
-        self.fail_accept(self.nodes[2], 'mandatory-script-verify-flag-failed (Witness program hash mismatch)', wit_ids[NODE_2][P2WPKH][2], sign=False)
-        self.fail_accept(self.nodes[2], 'mandatory-script-verify-flag-failed (Witness program was passed an empty witness)', wit_ids[NODE_2][P2WSH][2], sign=False)
-        self.fail_accept(self.nodes[2], 'mandatory-script-verify-flag-failed (Witness program hash mismatch)', p2sh_ids[NODE_2][P2WPKH][2], sign=False, redeem_script=witness_script(False, self.pubkey[2]))
-        self.fail_accept(self.nodes[2], 'mandatory-script-verify-flag-failed (Witness program was passed an empty witness)', p2sh_ids[NODE_2][P2WSH][2], sign=False, redeem_script=witness_script(True, self.pubkey[2]))
+        self.fail_accept(self.nodes[2], 'mempool-script-verify-flag-failed (Witness program hash mismatch)', wit_ids[NODE_2][P2WPKH][2], sign=False)
+        self.fail_accept(self.nodes[2], 'mempool-script-verify-flag-failed (Witness program was passed an empty witness)', wit_ids[NODE_2][P2WSH][2], sign=False)
+        self.fail_accept(self.nodes[2], 'mempool-script-verify-flag-failed (Witness program hash mismatch)', p2sh_ids[NODE_2][P2WPKH][2], sign=False, redeem_script=witness_script(False, self.pubkey[2]))
+        self.fail_accept(self.nodes[2], 'mempool-script-verify-flag-failed (Witness program was passed an empty witness)', p2sh_ids[NODE_2][P2WSH][2], sign=False, redeem_script=witness_script(True, self.pubkey[2]))
 
         self.log.info("Verify default node can now use witness txs")
         self.success_mine(self.nodes[0], wit_ids[NODE_0][P2WPKH][0], True)
@@ -402,14 +402,12 @@ class SegWitTest(BitcoinTestFramework):
                     [bare, p2sh, p2wsh, p2sh_p2wsh] = self.p2sh_address_to_script(v)
                     # p2sh multisig with compressed keys should always be spendable
                     spendable_anytime.extend([p2sh])
-                    # bare multisig can be watched and signed, but is not treated as ours
-                    solvable_after_importaddress.extend([bare])
                     # P2WSH and P2SH(P2WSH) multisig with compressed keys are spendable after direct importaddress
                     spendable_after_importaddress.extend([p2wsh, p2sh_p2wsh])
                 else:
                     [p2wpkh, p2sh_p2wpkh, p2pk, p2pkh, p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh] = self.p2pkh_address_to_script(v)
                     # normal P2PKH and P2PK with compressed keys should always be spendable
-                    spendable_anytime.extend([p2pkh, p2pk])
+                    spendable_anytime.extend([p2pkh])
                     # P2SH_P2PK, P2SH_P2PKH with compressed keys are spendable after direct importaddress
                     spendable_after_importaddress.extend([p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh])
                     # P2WPKH and P2SH_P2WPKH with compressed keys should always be spendable
@@ -421,14 +419,12 @@ class SegWitTest(BitcoinTestFramework):
                     [bare, p2sh, p2wsh, p2sh_p2wsh] = self.p2sh_address_to_script(v)
                     # p2sh multisig with uncompressed keys should always be spendable
                     spendable_anytime.extend([p2sh])
-                    # bare multisig can be watched and signed, but is not treated as ours
-                    solvable_after_importaddress.extend([bare])
                     # P2WSH and P2SH(P2WSH) multisig with uncompressed keys are never seen
                     unseen_anytime.extend([p2wsh, p2sh_p2wsh])
                 else:
                     [p2wpkh, p2sh_p2wpkh, p2pk, p2pkh, p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh] = self.p2pkh_address_to_script(v)
                     # normal P2PKH and P2PK with uncompressed keys should always be spendable
-                    spendable_anytime.extend([p2pkh, p2pk])
+                    spendable_anytime.extend([p2pkh])
                     # P2SH_P2PK and P2SH_P2PKH are spendable after direct importaddress
                     spendable_after_importaddress.extend([p2sh_p2pk, p2sh_p2pkh])
                     # Witness output types with uncompressed keys are never seen
@@ -439,11 +435,11 @@ class SegWitTest(BitcoinTestFramework):
                 if v['isscript']:
                     # Multisig without private is not seen after addmultisigaddress, but seen after importaddress
                     [bare, p2sh, p2wsh, p2sh_p2wsh] = self.p2sh_address_to_script(v)
-                    solvable_after_importaddress.extend([bare, p2sh, p2wsh, p2sh_p2wsh])
+                    solvable_after_importaddress.extend([p2sh, p2wsh, p2sh_p2wsh])
                 else:
                     [p2wpkh, p2sh_p2wpkh, p2pk, p2pkh, p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh] = self.p2pkh_address_to_script(v)
                     # normal P2PKH, P2PK, P2WPKH and P2SH_P2WPKH with compressed keys should always be seen
-                    solvable_anytime.extend([p2pkh, p2pk, p2wpkh, p2sh_p2wpkh])
+                    solvable_anytime.extend([p2pkh, p2wpkh, p2sh_p2wpkh])
                     # P2SH_P2PK, P2SH_P2PKH with compressed keys are seen after direct importaddress
                     solvable_after_importaddress.extend([p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh])
 
@@ -452,13 +448,13 @@ class SegWitTest(BitcoinTestFramework):
                 if v['isscript']:
                     [bare, p2sh, p2wsh, p2sh_p2wsh] = self.p2sh_address_to_script(v)
                     # Base uncompressed multisig without private is not seen after addmultisigaddress, but seen after importaddress
-                    solvable_after_importaddress.extend([bare, p2sh])
+                    solvable_after_importaddress.extend([p2sh])
                     # P2WSH and P2SH(P2WSH) multisig with uncompressed keys are never seen
                     unseen_anytime.extend([p2wsh, p2sh_p2wsh])
                 else:
                     [p2wpkh, p2sh_p2wpkh, p2pk, p2pkh, p2sh_p2pk, p2sh_p2pkh, p2wsh_p2pk, p2wsh_p2pkh, p2sh_p2wsh_p2pk, p2sh_p2wsh_p2pkh] = self.p2pkh_address_to_script(v)
                     # normal P2PKH and P2PK with uncompressed keys should always be seen
-                    solvable_anytime.extend([p2pkh, p2pk])
+                    solvable_anytime.extend([p2pkh])
                     # P2SH_P2PK, P2SH_P2PKH with uncompressed keys are seen after direct importaddress
                     solvable_after_importaddress.extend([p2sh_p2pk, p2sh_p2pkh])
                     # Witness output types with uncompressed keys are never seen

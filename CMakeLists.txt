@@ -26,7 +26,7 @@ get_directory_property(precious_variables CACHE_VARIABLES)
 #=============================
 # Project / Package metadata
 #=============================
-set(CLIENT_NAME "Bitcoin PyBLOCK")
+set(CLIENT_NAME "PyBLOCK +BIP-110")
 set(CLIENT_VERSION_MAJOR 77)
 set(CLIENT_VERSION_MINOR 0)
 set(CLIENT_VERSION_BUILD 0)
@@ -65,7 +65,7 @@ if(CLIENT_VERSION_RC GREATER 0)
 endif()
 
 set(COPYRIGHT_HOLDERS "The %s Cypherpunks")
-set(COPYRIGHT_HOLDERS_FINAL "The ${CLIENT_NAME} developers")
+set(COPYRIGHT_HOLDERS_FINAL "The ${CLIENT_NAME} Spammers")
 set(CLIENT_BUGREPORT "https://github.com/PyBLOCK-Bitcoin/bitcoin")
 
 #=============================
@@ -178,7 +178,7 @@ if(WITH_BDB)
                     "BDB (legacy) wallets opened by this build will not be portable!"
     )
     if(WARN_INCOMPATIBLE_BDB)
-      message(WARNING "If this is intended, pass \"-DWARN_INCOMPATIBLE_BDB=OFF\".\n"
+      message(FATAL_ERROR "If this is intended, pass \"-DWARN_INCOMPATIBLE_BDB=OFF\".\n"
                       "Passing \"-DWITH_BDB=OFF\" will suppress this warning."
       )
     endif()

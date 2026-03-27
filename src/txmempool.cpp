@@ -476,11 +476,20 @@ void CTxMemPool::Apply(ChangeSet* changeset)
             ancestors = *Assume(changeset->CalculateMemPoolAncestors(tx_entry, Limits::NoLimits()));
         }
         // First splice this entry into mapTx.
+#if BOOST_VERSION >= 107400
         auto node_handle = changeset->m_to_add.extract(tx_entry);
         auto result = mapTx.insert(std::move(node_handle));
 
         Assume(result.inserted);
         txiter it = result.position;
+#else
+        // Boost 1.73 didn't support node extraction, so we have to copy
+        auto result = mapTx.emplace(CTxMemPoolEntry::ExplicitCopy, *tx_entry);
+        changeset->m_to_add.erase(tx_entry);
+
+        Assume(result.second);
+        txiter it = result.first;
+#endif
 
         // Now update the entry for ancestors/descendants.
         if (ancestors.has_value()) {
@@ -868,7 +877,9 @@ void CTxMemPool::check(const CCoinsViewCache& active_coins_tip, int64_t spendhei
         TxValidationState dummy_state; // Not used. CheckTxInputs() should always pass
         CAmount txfee = 0;
         assert(!tx.IsCoinBase());
-        assert(Consensus::CheckTxInputs(tx, dummy_state, mempoolDuplicate, spendheight, txfee));
+        // Skip output size checks (CheckTxInputsRules::None), as these transactions already passed
+        // output size limits at mempool acceptance; this check only verifies UTXO consistency
+        assert(Consensus::CheckTxInputs(tx, dummy_state, mempoolDuplicate, spendheight, txfee, CheckTxInputsRules::None));
         for (const auto& input: tx.vin) mempoolDuplicate.SpendCoin(input.prevout);
         AddCoins(mempoolDuplicate, tx, std::numeric_limits<int>::max());
     }

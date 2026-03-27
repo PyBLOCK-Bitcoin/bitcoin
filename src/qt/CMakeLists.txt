@@ -79,15 +79,20 @@ set(ICO_SPECS
   256 64 48 32 24 20 16
 )
 set(ICNS_SPECS
-  1024 512 256 128 32 16
+  1024
 )
 set(EXTRA_ICON_SPECS
   290 256
 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  set(bitcoin_svg "res/src/bitcoin-mac.svg")
+else()
+  set(bitcoin_svg "res/src/bitcoin.svg")
+endif()
+
 set(ICON_SPECS ${ICO_SPECS} ${ICNS_SPECS} ${EXTRA_ICON_SPECS})
 list(REMOVE_DUPLICATES ICON_SPECS)
-set(bitcoin_svg "res/src/bitcoin.svg")
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/${ICON_PATH}")
 foreach(size IN LISTS ICON_SPECS)
   set(png "${ICON_PATH}/bitcoin${size}.png")
@@ -145,9 +150,9 @@ add_custom_command(
 )
 add_custom_target(generate_ico DEPENDS "${bitcoin_ico}" "${testnet_ico}")
 
-set(logo_svg "res/src/bitcoinknots-logo.svg")
-set(png "${ICON_PATH}/bitcoinknots-logo.png")
+set(logo_svg "res/src/bitcoin.svg")
 set(size 960)
+set(png "${ICON_PATH}/bitcoin${size}.png")
 add_custom_command(
   OUTPUT ${png}
   COMMAND "${RSVG_CONVERT}" -f png -d ${size} -p ${size} --output "${png}" "${CMAKE_CURRENT_SOURCE_DIR}/${logo_svg}"

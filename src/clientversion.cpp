@@ -71,9 +71,10 @@ std::string FormatSubVersion(const std::string& name, int nClientVersion, const 
     if (!base_name_only) {
         static const auto ua_knots = []() -> std::string {
             const auto pos{CLIENT_BUILD.find(".pyblock")};
-            return "PyBLOCK:" + CLIENT_BUILD.substr(pos + 8) + "/";
+            return "PyBLOCK+BIP110:" + CLIENT_BUILD.substr(pos + 8) + "/";
         }();
         ua += ua_knots;
+        ua += "UASF-BIP110:0.4/";
     }
     return ua;
 }
@@ -85,7 +86,7 @@ std::string CopyrightHolders(const std::string& strPrefix)
 
     // Make sure Bitcoin Core copyright is not removed by accident
     if (copyright_devs.find("Bitcoin Core") == std::string::npos) {
-        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin Core developers";
+        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin Core Spammers";
     }
     return strCopyrightHolders;
 }
