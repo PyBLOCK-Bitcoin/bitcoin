@@ -55,7 +55,7 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     pixmap.setDevicePixelRatio(devicePixelRatio);
 
     QPainter pixPaint(&pixmap);
-    pixPaint.setPen(QColor(0xF7, 0x93, 0x1A));
+    pixPaint.setPen(QColor(0xff, 0xff, 0xff));
 
     // draw a slightly radial gradient
     QRadialGradient gradient(QPoint(0,0), splashSize.width()/devicePixelRatio);
@@ -96,6 +96,7 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     int titleTextWidth2{GUIUtil::TextWidth(fm, titleParts[1]) - 5};
     if (titleTextWidth != titleTextWidth2) {
         QFont tweaked_font(font, 50*fontFactor);
+        tweaked_font.setFamily("Arial Black");
         tweaked_font.setPointSizeF(50.*fontFactor * titleTextWidth / titleTextWidth2);
         pixPaint.setFont(tweaked_font);
         fm = pixPaint.fontMetrics();
@@ -103,12 +104,13 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     pixPaint.drawText(nonstatus_centre.x() + 3, nonstatus_centre.y(), titleParts[1]);
     const int titleTextHeight2{fm.ascent()};
 
-    pixPaint.setFont(QFont(font, 33*fontFactor));
+    pixPaint.setFont(QFont(font, 45*fontFactor));
     fm = pixPaint.fontMetrics();
     titleTextWidth2 = GUIUtil::TextWidth(fm, titleParts[0]);
     if (titleTextWidth != titleTextWidth2) {
-        QFont tweaked_font(font, 33*fontFactor);
-        tweaked_font.setPointSizeF(33.*fontFactor * titleTextWidth / titleTextWidth2);
+        QFont tweaked_font(font, 45*fontFactor);
+        tweaked_font.setFamily("Arial Black");
+        tweaked_font.setPointSizeF(45.*fontFactor * titleTextWidth / titleTextWidth2);
         pixPaint.setFont(tweaked_font);
     }
     pixPaint.drawText(nonstatus_centre.x() + 5, nonstatus_centre.y() - titleTextHeight2, titleParts[0]);
@@ -130,7 +132,7 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
 
     // draw copyright stuff
     {
-        pixPaint.setFont(QFont(QApplication::font().toString(), 10*fontFactor));
+        pixPaint.setFont(QFont(QApplication::font().toString(), 8*fontFactor));
         fm = pixPaint.fontMetrics();
         titleCopyrightVSpace = titleVersionVSpace + (fm.lineSpacing() * (2 + copyrightText.count('\n')));
         const int x = nonstatus_centre.x() + 10;
